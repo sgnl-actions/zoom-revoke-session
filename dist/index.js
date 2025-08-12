@@ -1,103 +1,127 @@
 // SGNL Job Script - Auto-generated bundle
 'use strict';
 
-/**
- * SGNL Job Template
- *
- * This template provides a starting point for implementing SGNL jobs.
- * Replace this implementation with your specific business logic.
- */
+class RetryableError extends Error {
+  constructor(message) {
+    super(message);
+    this.retryable = true;
+  }
+}
+
+class FatalError extends Error {
+  constructor(message) {
+    super(message);
+    this.retryable = false;
+  }
+}
+
+function validateInputs(params) {
+  if (!params.userId || typeof params.userId !== 'string' || params.userId.trim() === '') {
+    throw new FatalError('Invalid or missing userId parameter');
+  }
+}
+
+async function revokeUserToken(userId, token) {
+  const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userId)}/token`;
+  
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  // Zoom API returns 204 No Content on success for DELETE endpoints
+  if (response.status === 204) {
+    return { success: true };
+  }
+  
+  if (!response.ok) {
+    const responseText = await response.text();
+    
+    if (response.status === 429) {
+      throw new RetryableError('Zoom API rate limit exceeded');
+    }
+    
+    if (response.status === 401) {
+      throw new FatalError('Invalid or expired authentication token');
+    }
+    
+    if (response.status === 403) {
+      throw new FatalError('Insufficient permissions to revoke user token');
+    }
+    
+    if (response.status === 404) {
+      throw new FatalError(`User not found: ${userId}`);
+    }
+    
+    if (response.status >= 500) {
+      throw new RetryableError(`Zoom API server error: ${response.status}`);
+    }
+    
+    throw new FatalError(`Failed to revoke user token: ${response.status} ${response.statusText} - ${responseText}`);
+  }
+  
+  return { success: true };
+}
 
 var script = {
-  /**
-   * Main execution handler - implement your job logic here
-   * @param {Object} params - Job input parameters
-   * @param {Object} context - Execution context with env, secrets, outputs
-   * @returns {Object} Job results
-   */
   invoke: async (params, context) => {
-    console.log('Starting job execution');
-    console.log(`Processing target: ${params.target}`);
-    console.log(`Action: ${params.action}`);
-
-    // TODO: Replace with your implementation
-    const { target, action, options = [], dry_run = false } = params;
-
-    if (dry_run) {
-      console.log('DRY RUN: No changes will be made');
+    console.log('Starting Zoom Revoke Session action');
+    
+    try {
+      validateInputs(params);
+      
+      const { userId } = params;
+      
+      console.log(`Processing user ID: ${userId}`);
+      
+      if (!context.secrets?.ZOOM_TOKEN) {
+        throw new FatalError('Missing required secret: ZOOM_TOKEN');
+      }
+      
+      // Revoke the user's SSO token
+      console.log(`Revoking SSO token for user: ${userId}`);
+      await revokeUserToken(userId, context.secrets.ZOOM_TOKEN);
+      
+      const result = {
+        userId,
+        tokenRevoked: true,
+        revokedAt: new Date().toISOString()
+      };
+      
+      console.log(`Successfully revoked SSO token for user: ${userId}`);
+      return result;
+      
+    } catch (error) {
+      console.error(`Error revoking Zoom user token: ${error.message}`);
+      
+      if (error instanceof RetryableError || error instanceof FatalError) {
+        throw error;
+      }
+      
+      throw new FatalError(`Unexpected error: ${error.message}`);
     }
-
-    // Access environment variables
-    const environment = context.env.ENVIRONMENT || 'development';
-    console.log(`Running in ${environment} environment`);
-
-    // Access secrets securely (example)
-    if (context.secrets.API_KEY) {
-      console.log(`Using API key ending in ...${context.secrets.API_KEY.slice(-4)}`);
-    }
-
-    // Use outputs from previous jobs in workflow
-    if (context.outputs && Object.keys(context.outputs).length > 0) {
-      console.log(`Available outputs from ${Object.keys(context.outputs).length} previous jobs`);
-      console.log(`Previous job outputs: ${Object.keys(context.outputs).join(', ')}`);
-    }
-
-    // TODO: Implement your business logic here
-    console.log(`Performing ${action} on ${target}...`);
-
-    if (options.length > 0) {
-      console.log(`Processing ${options.length} options: ${options.join(', ')}`);
-    }
-
-    console.log(`Successfully completed ${action} on ${target}`);
-
-    // Return structured results
-    return {
-      status: dry_run ? 'dry_run_completed' : 'success',
-      target: target,
-      action: action,
-      options_processed: options.length,
-      environment: environment,
-      processed_at: new Date().toISOString()
-      // Job completed successfully
-    };
   },
 
-  /**
-   * Error recovery handler - implement error handling logic
-   * @param {Object} params - Original params plus error information
-   * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
-   */
   error: async (params, _context) => {
-    const { error, target } = params;
-    console.error(`Job encountered error while processing ${target}: ${error.message}`);
-
-    // TODO: Implement your error recovery logic
-    // Example: Check if error is retryable and attempt recovery
-
-    // For now, just throw the error - implement your logic here
-    throw new Error(`Unable to recover from error: ${error.message}`);
+    const { error } = params;
+    console.error(`Error handler invoked: ${error?.message}`);
+    
+    // Re-throw to let framework handle retries
+    throw error;
   },
 
-  /**
-   * Graceful shutdown handler - implement cleanup logic
-   * @param {Object} params - Original params plus halt reason
-   * @param {Object} context - Execution context
-   * @returns {Object} Cleanup results
-   */
   halt: async (params, _context) => {
-    const { reason, target } = params;
-    console.log(`Job is being halted (${reason}) while processing ${target}`);
-
-    // TODO: Implement your cleanup logic
-    // Example: Save partial results, close connections, etc.
-
+    const { reason, userId } = params;
+    console.log(`Job is being halted (${reason})`);
+    
     return {
-      status: 'halted',
-      target: target || 'unknown',
-      reason: reason,
-      halted_at: new Date().toISOString()
+      userId: userId || 'unknown',
+      reason: reason || 'unknown',
+      haltedAt: new Date().toISOString(),
+      cleanupCompleted: true
     };
   }
 };

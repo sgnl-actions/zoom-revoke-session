@@ -1,48 +1,36 @@
-name: job-template
-description: Template for SGNL JavaScript jobs - replace with your job description
+name: zoom-revoke-session
+description: Revoke SSO token for a Zoom user
 
 # Input parameters for web form generation
 inputs:
-  target:
+  userId:
     type: text
-    description: Target resource identifier (e.g., user email, group ID)
+    description: The Zoom user ID to revoke SSO token for
     required: true
     validation:
       min: 1
       max: 100
 
-  action:
-    type: text
-    description: Action to perform on the target resource
-    required: true
-    validation:
-      min: 1
-      max: 50
-
-  options:
-    type: array
-    description: Additional options for the operation
-    required: false
-    item_type: text
-    validation:
-      max: 10
-
-  dry_run:
-    type: boolean
-    description: Preview changes without executing them
-    required: false
-    default: false
-
 # Expected output structure
 outputs:
-  status:
+  userId:
     type: text
-    description: Operation result (success, failed, recovered, etc.)
+    description: The Zoom user ID that was processed
 
-  target:
-    type: text
-    description: The target resource that was processed
+  tokenRevoked:
+    type: boolean
+    description: Whether the SSO token was successfully revoked
 
-  processed_at:
+  revokedAt:
     type: datetime
-    description: When the operation completed (ISO 8601)
+    description: When the revocation completed (ISO 8601)
+
+# Required secrets (configured at deployment time)
+secrets:
+  - ZOOM_TOKEN
+
+# Runtime configuration
+runtime:
+  type: nodejs-22
+  timeout: 30s
+  memory: 128Mi

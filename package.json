@@ -1,7 +1,7 @@
 {
-  "name": "@sgnl/job-template",
+  "name": "@sgnl/zoom-revoke-session",
   "version": "1.0.0",
-  "description": "Template for SGNL JavaScript jobs",
+  "description": "Revoke SSO token for a Zoom user",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "validate": "node scripts/validate-metadata.js",
     "dev": "node scripts/dev-runner.js"
   },
-  "keywords": ["sgnl", "job", "template", "identity", "security"],
+  "keywords": ["sgnl", "zoom", "session", "revoke", "security"],
   "author": "SGNL Engineering",
   "license": "MIT",
   "dependencies": {
