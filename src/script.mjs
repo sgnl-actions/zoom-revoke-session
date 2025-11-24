@@ -74,13 +74,13 @@ export default {
 
       console.log(`Processing user ID: ${userId}`);
 
-      if (!context.secrets?.ZOOM_TOKEN) {
-        throw new FatalError('Missing required secret: ZOOM_TOKEN');
+      if (!context.secrets?.BEARER_AUTH_TOKEN) {
+        throw new FatalError('Missing required secret: BEARER_AUTH_TOKEN');
       }
 
       // Revoke the user's SSO token
       console.log(`Revoking SSO token for user: ${userId}`);
-      await revokeUserToken(userId, context.secrets.ZOOM_TOKEN);
+      await revokeUserToken(userId, context.secrets.BEARER_AUTH_TOKEN);
 
       const result = {
         userId,

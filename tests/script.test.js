@@ -6,7 +6,7 @@ describe('Zoom Revoke Session Script', () => {
       ENVIRONMENT: 'test'
     },
     secrets: {
-      ZOOM_TOKEN: 'Bearer test-zoom-token-123456'
+      BEARER_AUTH_TOKEN: 'Bearer test-zoom-token-123456'
     },
     outputs: {}
   };
@@ -34,7 +34,7 @@ describe('Zoom Revoke Session Script', () => {
         .rejects.toThrow('Invalid or missing userId parameter');
     });
 
-    test('should throw error for missing ZOOM_TOKEN', async () => {
+    test('should throw error for missing BEARER_AUTH_TOKEN', async () => {
       const params = {
         userId: 'user123'
       };
@@ -45,7 +45,7 @@ describe('Zoom Revoke Session Script', () => {
       };
 
       await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('Missing required secret: ZOOM_TOKEN');
+        .rejects.toThrow('Missing required secret: BEARER_AUTH_TOKEN');
     });
 
     test('should validate empty userId', async () => {
