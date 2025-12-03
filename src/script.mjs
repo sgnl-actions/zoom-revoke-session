@@ -1,3 +1,5 @@
+import { getAuthorizationHeader, getBaseUrl } from '@sgnl-actions/utils';
+
 class RetryableError extends Error {
   constructor(message) {
     super(message);
@@ -18,13 +20,13 @@ function validateInputs(params) {
   }
 }
 
-async function revokeUserToken(userId, token) {
-  const url = `https://api.zoom.us/v2/users/${encodeURIComponent(userId)}/token`;
+async function revokeUserToken(userId, authHeader, baseUrl) {
+  const url = `${baseUrl.replace(/\/$/, '')}/v2/users/${encodeURIComponent(userId)}/token`;
 
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {
-      'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+      'Authorization': authHeader,
       'Content-Type': 'application/json'
     }
   });
@@ -64,6 +66,32 @@ async function revokeUserToken(userId, token) {
 }
 
 export default {
+  /**
+   * Main execution handler - revokes SSO token for a Zoom user
+   * @param {Object} params - Job input parameters
+   * @param {string} params.userId - The Zoom user ID to revoke SSO token for (required)
+   * @param {string} params.address - Optional Zoom API base URL
+   *
+   * @param {Object} context - Execution context with secrets and environment
+   * @param {string} context.environment.ADDRESS - Zoom API base URL
+   *
+   * The configured auth type will determine which of the following environment variables and secrets are available
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN
+   *
+   * @param {string} context.secrets.BASIC_USERNAME
+   * @param {string} context.secrets.BASIC_PASSWORD
+   *
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_SCOPE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
+   *
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   *
+   * @returns {Promise<Object>} Action result
+   */
   invoke: async (params, context) => {
     console.log('Starting Zoom Revoke Session action');
 
@@ -74,13 +102,15 @@ export default {
 
       console.log(`Processing user ID: ${userId}`);
 
-      if (!context.secrets?.BEARER_AUTH_TOKEN) {
-        throw new FatalError('Missing required secret: BEARER_AUTH_TOKEN');
-      }
+      // Get authorization header
+      const authHeader = await getAuthorizationHeader(context);
+
+      // Get base URL
+      const baseUrl = getBaseUrl(params, context);
 
       // Revoke the user's SSO token
       console.log(`Revoking SSO token for user: ${userId}`);
-      await revokeUserToken(userId, context.secrets.BEARER_AUTH_TOKEN);
+      await revokeUserToken(userId, authHeader, baseUrl);
 
       const result = {
         userId,
@@ -102,6 +132,14 @@ export default {
     }
   },
 
+  /**
+   * Error recovery handler - handles errors during token revocation
+   *
+   * @param {Object} params - Original params plus error information
+   * @param {Object} context - Execution context
+   *
+   * @returns {Object} Recovery results
+   */
   error: async (params, _context) => {
     const { error } = params;
     console.error(`Error handler invoked: ${error?.message}`);
@@ -110,6 +148,14 @@ export default {
     throw error;
   },
 
+  /**
+   * Halt handler - handles graceful shutdown
+   *
+   * @param {Object} params - Halt parameters including reason
+   * @param {Object} context - Execution context
+   *
+   * @returns {Object} Halt results
+   */
   halt: async (params, _context) => {
     const { reason, userId } = params;
     console.log(`Job is being halted (${reason})`);

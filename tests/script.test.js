@@ -2,8 +2,8 @@ import script from '../src/script.mjs';
 
 describe('Zoom Revoke Session Script', () => {
   const mockContext = {
-    env: {
-      ENVIRONMENT: 'test'
+    environment: {
+      ADDRESS: 'https://api.zoom.us'
     },
     secrets: {
       BEARER_AUTH_TOKEN: 'Bearer test-zoom-token-123456'
@@ -34,7 +34,7 @@ describe('Zoom Revoke Session Script', () => {
         .rejects.toThrow('Invalid or missing userId parameter');
     });
 
-    test('should throw error for missing BEARER_AUTH_TOKEN', async () => {
+    test('should throw error for missing authentication', async () => {
       const params = {
         userId: 'user123'
       };
@@ -45,7 +45,7 @@ describe('Zoom Revoke Session Script', () => {
       };
 
       await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('Missing required secret: BEARER_AUTH_TOKEN');
+        .rejects.toThrow('No authentication configured');
     });
 
     test('should validate empty userId', async () => {
