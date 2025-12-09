@@ -21,7 +21,7 @@ function validateInputs(params) {
 }
 
 async function revokeUserToken(userId, authHeader, baseUrl) {
-  const url = `${baseUrl.replace(/\/$/, '')}/v2/users/${encodeURIComponent(userId)}/token`;
+  const url = `${baseUrl}/v2/users/${encodeURIComponent(userId)}/token`;
 
   const response = await fetch(url, {
     method: 'DELETE',
