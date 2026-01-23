@@ -1,4 +1,4 @@
-import { getAuthorizationHeader, getBaseURL, resolveJSONPathTemplates} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
 
 class RetryableError extends Error {
   constructor(message) {
@@ -95,18 +95,10 @@ export default {
   invoke: async (params, context) => {
     console.log('Starting Zoom Revoke Session action');
 
-    const jobContext = context.data || {};
-
-    // Resolve JSONPath templates in params
-    const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
-    if (errors.length > 0) {
-     console.warn('Template resolution errors:', errors);
-    }
-
     try {
-      validateInputs(resolvedParams);
+      validateInputs(params);
 
-      const { userId } = resolvedParams;
+      const { userId } = params;
 
       console.log(`Processing user ID: ${userId}`);
 
@@ -114,7 +106,7 @@ export default {
       const authHeader = await getAuthorizationHeader(context);
 
       // Get base URL
-      const baseUrl = getBaseURL(resolvedParams, context);
+      const baseUrl = getBaseURL(params, context);
 
       // Revoke the user's SSO token
       console.log(`Revoking SSO token for user: ${userId}`);
