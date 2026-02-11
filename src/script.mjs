@@ -1,4 +1,4 @@
-import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL } from '@sgnl-actions/utils';
 
 class RetryableError extends Error {
   constructor(message) {
