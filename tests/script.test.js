@@ -1,4 +1,5 @@
 import script from '../src/script.mjs';
+import { SGNL_USER_AGENT } from '@sgnl-actions/utils';
 
 describe('Zoom Revoke Session Script', () => {
   const mockContext = {
@@ -56,6 +57,28 @@ describe('Zoom Revoke Session Script', () => {
       await expect(script.invoke(params, mockContext))
         .rejects.toThrow('Invalid or missing userId parameter');
     });
+
+    test('should include User-Agent header in API calls', async () => {
+      const params = {
+        userId: 'testuser'
+      };
+
+      let capturedOptions;
+      global.fetch = async (url, options) => {
+        capturedOptions = options;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ message: 'Zoom Session revoked' }),
+          text: async () => 'Zoom Session revoked'
+        };
+      };
+
+      await script.invoke(params, mockContext);
+
+      expect(capturedOptions.headers['User-Agent']).toBe(SGNL_USER_AGENT);
+    });
+
 
     // Note: Testing actual Zoom API calls would require mocking fetch
     // or integration tests with real Zoom credentials

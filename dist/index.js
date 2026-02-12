@@ -9,6 +9,11 @@
  */
 
 /**
+ * User-Agent header value for all SGNL CAEP Hub requests.
+ */
+const SGNL_USER_AGENT = 'SGNL-CAEP-Hub/2.0';
+
+/**
  * Get OAuth2 access token using client credentials flow
  * @param {Object} config - OAuth2 configuration
  * @param {string} config.tokenUrl - Token endpoint URL
@@ -39,7 +44,8 @@ async function getClientCredentialsToken(config) {
 
   const headers = {
     'Content-Type': 'application/x-www-form-urlencoded',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'User-Agent': SGNL_USER_AGENT
   };
 
   if (authStyle === 'InParams') {
@@ -184,7 +190,8 @@ async function revokeUserToken(userId, authHeader, baseUrl) {
     method: 'DELETE',
     headers: {
       'Authorization': authHeader,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': SGNL_USER_AGENT
     }
   });
 

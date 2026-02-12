@@ -1,4 +1,4 @@
-import { getAuthorizationHeader, getBaseURL} from '@sgnl-actions/utils';
+import { getAuthorizationHeader, getBaseURL, SGNL_USER_AGENT} from '@sgnl-actions/utils';
 
 class RetryableError extends Error {
   constructor(message) {
@@ -27,7 +27,8 @@ async function revokeUserToken(userId, authHeader, baseUrl) {
     method: 'DELETE',
     headers: {
       'Authorization': authHeader,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'User-Agent': SGNL_USER_AGENT
     }
   });
 
