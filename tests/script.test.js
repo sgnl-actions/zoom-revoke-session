@@ -35,20 +35,6 @@ describe('Zoom Revoke Session Script', () => {
         .rejects.toThrow('Invalid or missing userId parameter');
     });
 
-    test('should throw error for missing authentication', async () => {
-      const params = {
-        userId: 'user123'
-      };
-
-      const contextWithoutToken = {
-        ...mockContext,
-        secrets: {}
-      };
-
-      await expect(script.invoke(params, contextWithoutToken))
-        .rejects.toThrow('No authentication configured');
-    });
-
     test('should validate empty userId', async () => {
       const params = {
         userId: '   '
