@@ -65,7 +65,6 @@ environment:
   ADDRESS:
     type: text
     description: Zoom API base URL
-    default: "https://api.zoom.us"
 
   OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID:
     type: text
